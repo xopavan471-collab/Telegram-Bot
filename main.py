@@ -6,40 +6,33 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 TOKEN = os.environ.get("BOT_TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("YouTube Downloader Ready Hai Bhai! 🔥\nBas YouTube ka link bhejo.")
+    await update.message.reply_text("Bhai link bhejo, mai download karke deta hu! 🎥")
 
-async def download_yt(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     url = update.message.text
     if "youtube.com" not in url and "youtu.be" not in url:
-        await update.message.reply_text("Bhai sahi YouTube link bhejo 😅")
         return
-
-    await update.message.reply_text("Downloading... ⏳ Thoda wait karo bhai")
-
+    
+    await update.message.reply_text("Downloading... ⏳")
     try:
-        ydl_opts = {
-            'format': 'best[height<=720]',
-            'outtmpl': '/tmp/%(title)s.%(ext)s',
-            'noplaylist': True,
-        }
+        ydl_opts = {'format': 'best', 'outtmpl': '%(title)s.%(ext)s'}
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
-            file_path = ydl.prepare_filename(info)
-
-        await update.message.reply_video(video=open(file_path, 'rb'), caption=f"{info.get('title')}")
-        os.remove(file_path)
-
+            filename = ydl.prepare_filename(info)
+        
+        await update.message.reply_document(document=open(filename, 'rb'))
+        os.remove(filename)
     except Exception as e:
-        await update.message.reply_text(f"Error aa gaya bhai: {e}")
+        await update.message.reply_text(f"Error: {e}")
 
 def main():
     if not TOKEN:
         print("BOT_TOKEN nahi mila!")
         return
+    print("YouTube Bot Running...")
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_yt))
-    print("YouTube Bot Running...")
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_link))
     app.run_polling()
 
 if __name__ == "__main__":
