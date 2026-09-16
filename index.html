@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+body{background:#000;color:#fff;font-family:sans-serif;text-align:center;padding:20px}
+h2{color:#0a84ff}input{width:95%;padding:15px;border-radius:12px;border:1px solid #0a84ff;background:#111;color:#fff}
+button{width:95%;padding:15px;background:#0a84ff;color:#fff;border:none;border-radius:12px;margin-top:15px;font-weight:bold}
+.card{background:#111;border-radius:15px;padding:15px;margin-top:20px;border:1px solid #0a84ff33}
+</style>
+</head>
+<body>
+<h2>⚡ TUFAAN DOWNLOADER</h2>
+<p>YouTube | Instagram | Facebook</p>
+<input id="link" placeholder="Link yaha paste karo bhai...">
+<button onclick="send()">🚀 DOWNLOAD KARO</button>
+<div class="card">🔥 4 Second Me Download Hoga</div>
+<script>
+let tg=Telegram.WebApp;tg.expand();
+function send(){
+let l=document.getElementById('link').value;
+if(!l){tg.showAlert("Bhai link to daal!");return;}
+tg.sendData(l);tg.close();
+}
+</script>
+</body>
+</html>
