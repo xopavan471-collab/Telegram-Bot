@@ -1,67 +1,78 @@
-import os, re, requests
-from urllib.parse import unquote
+import os
+import logging
+import time
+import aiohttp
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 
-TOKEN = os.environ.get("BOT_TOKEN")
+# Logging setup
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Token environment variable ya direct yahan daal sakte hain
+TOKEN = ("BOT_TOKEN", "8819977957:AAHdRRXbygwTrQ5t2hmeCJMX_QRRSwGcy70")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🔥 Bot ON! Mediafire + Direct Link dono bhej sakta hai.")
+    user_name = update.effective_user.first_name
+    welcome_text = (
+        f"Hello {user_name}!\n\n"
+        f"Welcome to Zexon Bypass Bot! 🔗\n"
+        f"Koi bhi short link bhejiye aur turant bypassed link paaiye.\n\n"
+        f"Command: /bypass <link> ya direct link bhejein."
+    )
+    await update.message.reply_text(welcome_text)
 
-def get_mediafire_direct_link(url):
-    # Mediafire ka asli download link nikalna
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    page = requests.get(url, headers=headers).text
-    # Mediafire ka direct link is button me hota hai
-    match = re.search(r'aria-label="Download file"\s+href="([^"]+)"', page)
-    if match:
-        return match.group(1)
-    match2 = re.search(r'https://download[^"]+mediafire\.com[^"]+', page)
-    if match2:
-        return match2.group(0)
-    return None
+async def bypass_link_logic(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.args:
+        url = context.args[0]
+    else:
+        url = update.message.text.strip()
 
-async def uploader(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    url = update.message.text.strip()
     if not url.startswith("http"):
         return
 
-    msg = await update.message.reply_text("🔍 Link check kar raha hu...")
+    msg = await update.message.reply_text("🔄 Bypassing link, please wait...")
+    start_time = time.time()
+
+    api_url = f"https://api.bypass.vip/bypass?url={url}"
 
     try:
-        final_url = url
-        # Agar mediafire hai to direct link nikalo
-        if "mediafire.com" in url:
-            await msg.edit_text("📂 Mediafire link mila! Direct link nikal raha hu...")
-            direct = get_mediafire_direct_link(url)
-            if not direct:
-                await msg.edit_text("❌ Mediafire se direct link nahi nikla. Link sahi hai na?")
-                return
-            final_url = direct
-
-        await msg.edit_text("📥 Downloading... File bada hai to 1-2 min lagega")
-
-        r = requests.get(final_url, stream=True, timeout=120)
-        filename = unquote(final_url.split("/")[-1].split("?")[0]) or "mediafire_file"
-
-        with open(filename, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024*1024):
-                if chunk: f.write(chunk)
-
-        await msg.edit_text(f"🚀 Uploading: {filename}")
-        await update.message.reply_document(document=open(filename, 'rb'), filename=filename)
-
-        os.remove(filename)
-        await msg.delete()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url, timeout=30) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    time_taken = round(time.time() - start_time, 2)
+                    
+                    if data.get("status") == 200 or "destination" in data:
+                        final_url = data.get("destination") or data.get("url")
+                        response_text = (
+                            f"⚡ **Bypass Successful!**\n\n"
+                            f"🔗 **Original Link:**\n{url}\n\n"
+                            f"🎯 **Bypassed Link:**\n{final_url}\n\n"
+                            f"⏱ **Time Taken:** {time_taken} seconds\n\n"
+                            f"Powered By : @GF_Zexon_Bypass_Bot"
+                        )
+                        await msg.edit_text(response_text, disable_web_page_preview=True)
+                    else:
+                        error_msg = data.get("msg", "Unknown error from API")
+                        await msg.edit_text(f"❌ Bypass Failed! Server response: {error_msg}")
+                else:
+                    await msg.edit_text(f"❌ Bypass Failed! API status code: {response.status}")
 
     except Exception as e:
-        await msg.edit_text(f"Error: {e}")
+        logger.error(f"Error: {str(e)}")
+        await msg.edit_text(f"❌ Bypass Failed! Error occurred: {str(e)[:50]}")
 
 def main():
-    app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, uploader))
-    app.run_polling()
+    application = ApplicationBuilder().token(TOKEN).build()
 
-if __name__ == "__main__":
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("bypass", bypass_link_logic))
+    application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), bypass_link_logic))
+
+    print("🤖 Bot started successfully!")
+    application.run_polling()
+
+if __name__ == '__main__':
     main()
+                
