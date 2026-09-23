@@ -1,4 +1,3 @@
-import os
 import logging
 import time
 import aiohttp
@@ -9,14 +8,14 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Token environment variable ya direct yahan daal sakte hain
-TOKEN = ("BOT_TOKEN", "8819977957:AAHdRRXbygwTrQ5t2hmeCJMX_QRRSwGcy70")
+# Token ko seedha string mein define kar diya hai taaki tuple error na aaye
+TOKEN = "8819977957:AAHnYDrOolaKokG5fZ6UyLYp2KxvEsmWxDo"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = update.effective_user.first_name
     welcome_text = (
         f"Hello {user_name}!\n\n"
-        f"Welcome to Zexon Bypass Bot! 🔗\n"
+        f"Welcome to GF Zexon Bypass Bot! 🔗\n"
         f"Koi bhi short link bhejiye aur turant bypassed link paaiye.\n\n"
         f"Command: /bypass <link> ya direct link bhejein."
     )
@@ -75,4 +74,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-                
+                    
